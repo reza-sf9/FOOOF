@@ -1,0 +1,200 @@
+#### 1- Install multitaper PSD, arviz, FitSpectrum
+
+import sys
+import pymc3 as pm
+import numpy as np
+import matplotlib.pyplot as plt
+import theano.tensor as tt
+import buildsignal as bs  #
+
+import nitime.utils as utils
+from nitime.viz import winspect
+from nitime.viz import plot_spectral_estimate
+import arviz as az
+from scipy.stats import norm
+
+from fun_calc import * 
+
+plt.ion()
+np.random.seed(1000)  # set the random seed.
+
+
+###  Specify the signal
+dt = 0.001
+f, psd_mt, nu = calc_ken_data_generation(dt)
+
+#### rsf - calc covariance matrix and multitaper calculation 
+signal= psd_mt
+calc_cov_pre_analysis(signal, dt)
+
+
+#### rsf - generating syntehtic data
+# async config
+
+input_synthetic = {'a': 50,
+                   'b': 4,
+                   
+                   'mu_1': 5,
+                   'sigma_1': 1,
+                   'w_1': 4,
+                   
+                   'mu_2': 5,
+                   'sigma_2': 1,
+                   'w_2': 4,
+                   
+                   'noise_coef': 0.4,
+                   'mean_noise': 0,
+                   'std_noise': 1,
+                   
+                   'num_bumps': 1,
+                   'num_taper': 10,
+                   
+                   'low_fr': 1,
+                   'high_fr': 10,
+                   'step_fr': 0.5}
+
+psd_data_n, freq_range = synthetic_data(input_synthetic)
+
+
+#### run the model to fit using pymc3.
+# trace, modelsim = do_fit_psd(f_psd, np.log(psd_mt[theseInds]))
+if input_synthetic['num_taper']==1:
+    method_solving = '1' 
+else: 
+    method_solving = 'M' 
+# 1 > one-dimensional 
+# M > multi-dimensional 
+
+input_model = {
+'method_solving': method_solving,
+'num_bumps' : input_synthetic['num_bumps'], 
+'mu_1': input_synthetic['mu_1'] - 3, 
+'sd_1': input_synthetic['sigma_1']**2
+}
+
+if input_synthetic['num_bumps']==2:
+    added_dict = { 
+        'mu_2': input_synthetic['mu_2'] - 5, 
+        'sd_2': input_synthetic['sigma_2']**2
+        }
+    
+    input_model.update(added_dict)
+    
+if method_solving== 'M':
+    added_dict = {'cov_mode': -1}
+    
+    input_model.update(added_dict)
+    
+data = psd_data_n
+num_sample_post= 2500
+trace, modelsim = do_fit_psd(data, freq_range, input_model, num_sample_post)
+
+#### rsf - visualization 
+if method_solving == '1':
+    y_fit = np.percentile(trace.gauss, 50, axis=0)
+    
+    mu_val_ = trace['gauss']
+    mu_val = mu_val_[-1, :]
+    
+    data_fit = mu_val
+    
+    plt.figure()
+    plt.plot(freq_range, data_fit, 'r', marker='+', ls='None', ms=5, mew=1, label='Fitted by model')
+    plt.plot(freq_range, data.reshape((data.shape[1], )), label='synthetic data')
+    plt.legend()
+    # plt.plot(f_psd, np.log(psd_mt[theseInds]))
+    plt.show()
+    
+elif method_solving == 'M':
+    mu_val_ = trace['mu_']
+    mu_val = mu_val_[-1, :]
+    
+    plt.figure()
+    plt.plot(freq_range, mu_val, 'r', marker='+', ls='None', ms=5, mew=1, label='Fitted by model')
+    data_plt = np.mean(data, axis=0)
+    plt.plot(freq_range, data_plt, label='synthetic data')
+    plt.legend()
+    # plt.plot(f_psd, np.log(psd_mt[theseInds]))
+    plt.show()
+    
+    
+    
+
+
+# fig = plt.figure() 
+# pm.traceplot(trace)
+# plt.show()
+
+# RANDOM_SEED = 100
+# with modelsim:
+#     ppc = pm.sample_posterior_predictive(
+#             trace, var_names=['mu1', 'sig1', 'w1'], random_seed=RANDOM_SEED
+#         )
+
+#     az.plot_ppc(az.from_pymc3(posterior_predictive=ppc, model=modelsim))
+
+
+## 5- Look at marginal posteriors of each component
+
+x_axis = np.arange(-2, 10, 0.001)
+
+# prior dist
+prior_dist = norm.pdf(x_axis, input_model['mu_1'], np.sqrt(input_model['sd_1']))
+
+# posterior dist 
+posterior_mu1_sample = trace['mu1']
+post_mu, post_sigma = norm.fit(posterior_mu1_sample)
+post_dist = norm.pdf(x_axis, post_mu, post_sigma)
+post_dist = (post_dist/np.max(post_dist))*np.max(prior_dist)
+
+
+plt.figure()
+plt.plot(x_axis, prior_dist, color='red', label='prior data')
+plt.plot(x_axis, post_dist, color='green', label='posterior dist')
+# plt.axvline(x= mu_1,  'g--', label='synthetic value')
+plt.title('f1- synthetic value =' + str(input_synthetic['mu_1']))
+plt.legend()
+plt.show()
+
+
+
+
+if input_model['num_bumps'] ==2:
+    x_axis = np.arange(0, 30, 0.001)
+    prior_dist = norm.pdf(x_axis, input_model['mu_2'], np.sqrt(input_model['sd_2']))
+
+    # posterior dist 
+    posterior_mu_sample = trace['mu2']
+    post_mu, post_sigma = norm.fit(posterior_mu_sample)
+    post_dist = norm.pdf(x_axis, post_mu, post_sigma)
+    post_dist = (post_dist/np.max(post_dist))*np.max(prior_dist)
+
+
+    plt.figure()
+    plt.plot(x_axis, prior_dist, color='red', label='prior data')
+    plt.plot(x_axis, post_dist, color='green', label='posterior dist')
+    # plt.axvline(x= mu_1,  'g--', label='synthetic value')
+    plt.title('f2- synthetic value =' + str(input_synthetic['mu_2']))
+    plt.legend()
+
+    plt.show()
+    
+    az.plot_trace(trace, ['mu2'])
+
+
+
+
+# az.plot_trace(trace, ['mu1'])
+# az.plot_trace(trace, ['mu1'], kind="rank_bars")
+# az.summary(trace, ['mu1'])
+# az.plot_trace(trace)
+
+if method_solving == '1':
+    az.plot_trace(trace, ['mu1'])
+    K=1        
+    
+elif method_solving == 'M':
+    # NUTS: [ro, s_d, mu1, sig1, w1, c, b, a]
+    az.plot_trace(trace, ['mu_'])
+    
+    K=1
