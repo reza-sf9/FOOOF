@@ -33,6 +33,7 @@ calc_cov_pre_analysis(signal, dt)
 
 input_synthetic = {'a': 50,
                    'b': 4,
+                   'c': 3,
                    
                    'mu_1': 5,
                    'sigma_1': 1,
@@ -44,7 +45,8 @@ input_synthetic = {'a': 50,
                    
                    'noise_coef': 0.4,
                    'mean_noise': 0,
-                   'std_noise': 1,
+                   'var_noise': 1,
+                   'ro_noise': 0.5,
                    
                    'num_bumps': 1,
                    'num_taper': 10,
@@ -54,6 +56,53 @@ input_synthetic = {'a': 50,
                    'step_fr': 0.5}
 
 psd_data_n, freq_range = synthetic_data(input_synthetic)
+
+plt_=0
+if plt_:
+    estimated_cov = (np.cov(psd_data_n))
+    plt.figure()
+    plt.imshow(estimated_cov)
+    ro_str = "{:.2f}".format(input_synthetic['ro_noise'])
+    plt.title('estimated cov matrix - ro = ' + ro_str)
+    plt.colorbar()
+    plt.colormaps()
+    # plt.clim(0, 8) 
+    plt.show()
+    
+    
+    man_val = np.mean(psd_data_n, axis=0)
+    
+    fig, axs = plt.subplots(5,2)
+    fig.suptitle('residual  - ro=' +  ro_str)
+    
+    axs[0,0].plot(freq_range, psd_data_n[0, :]-man_val)
+    axs[0,0].set_title('1')
+    axs[0,1].plot(freq_range, psd_data_n[1, :]-man_val)
+    axs[0,1].set_title('2')
+    
+    axs[1,0].plot(freq_range, psd_data_n[2, :]-man_val)
+    axs[1,0].set_title('3')
+    axs[1,1].plot(freq_range, psd_data_n[3, :]-man_val)
+    axs[1,1].set_title('4')
+    
+    axs[2,0].plot(freq_range, psd_data_n[4, :]-man_val)
+    axs[2,0].set_title('5')
+    axs[2,1].plot(freq_range, psd_data_n[5, :]-man_val)
+    axs[2,1].set_title('6')
+    
+    axs[3,0].plot(freq_range, psd_data_n[6, :]-man_val)
+    axs[3,0].set_title('7')
+    axs[3,1].plot(freq_range, psd_data_n[7, :]-man_val)
+    axs[3,1].set_title('8')
+    
+    axs[4,0].plot(freq_range, psd_data_n[8, :]-man_val)
+    axs[4,0].set_title('9')
+    axs[4,0].set_xlabel('freq (Hz)')
+    axs[4,1].plot(freq_range, psd_data_n[9, :]-man_val)
+    axs[4,1].set_title('10')
+    axs[4,1].set_xlabel('freq (Hz)')
+
+
 
 
 #### run the model to fit using pymc3.
@@ -86,7 +135,7 @@ if method_solving== 'M':
     input_model.update(added_dict)
     
 data = psd_data_n
-num_sample_post= 2500
+num_sample_post= 5000
 trace, modelsim = do_fit_psd(data, freq_range, input_model, num_sample_post)
 
 #### rsf - visualization 
@@ -195,6 +244,10 @@ if method_solving == '1':
     
 elif method_solving == 'M':
     # NUTS: [ro, s_d, mu1, sig1, w1, c, b, a]
-    az.plot_trace(trace, ['mu_'])
+    # az.plot_trace(trace, ['mu_'])
+    az.plot_trace(trace, ['sig1', 'w1'])
+    az.plot_trace(trace, ['ro', 's_d'])
+    az.plot_trace(trace, ['a', 'b', 'c'])
     
     K=1
+k=1

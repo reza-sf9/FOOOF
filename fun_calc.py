@@ -55,7 +55,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
             
             elif method_solving == 'M':
                 sig_cov = pm.HalfNormal("s_d", sd=sd_1) # REZA: get error if put normal 
-                ro_cov = pm.Uniform('ro', lower=0, upper=1)
+                ro_cov = pm.Uniform('ro', lower=-1, upper=1)
 
                 l_freq = f_at_obs.shape[0]
                 mu_ = calc_mu_vec(w1, mu1, sig1, a, b, c, f_at_obs)
@@ -130,6 +130,7 @@ def synthetic_data(input_synthetic):
     # async config 
     a= input_synthetic['a']
     b= input_synthetic['b']
+    c = input_synthetic['c']
     
     # 1st bump 
     mu_1 = input_synthetic['mu_1']
@@ -144,7 +145,8 @@ def synthetic_data(input_synthetic):
     # noise config 
     noise_coef = input_synthetic['noise_coef']
     mean_noise = input_synthetic['mean_noise']
-    std_noise = input_synthetic['std_noise']
+    var_noise = input_synthetic['var_noise']
+    ro_noise = input_synthetic['ro_noise']
     
     # general config 
     num_bumps = input_synthetic['num_bumps']
@@ -157,13 +159,14 @@ def synthetic_data(input_synthetic):
     
     
     
+    
     freq_range = np.arange(low_fr, high_fr, step_fr)
     datanp = np.zeros((num_taper, freq_range.shape[0]))
     num_samples_noise = freq_range.shape[0]
     
     for tpr in range(num_taper):
         
-        async_ = a/(freq_range+b)
+        async_ = a/(freq_range+b) + c
         
         
         if num_bumps==1:
@@ -177,9 +180,32 @@ def synthetic_data(input_synthetic):
 
                 
         # generating white noise
-        noise_ = noise_coef*np.random.normal(mean_noise, std_noise, size=num_samples_noise)
+        # noise_ = noise_coef*np.random.normal(mean_noise, std_noise, size=num_samples_noise)
         
-        datanp[tpr, :] = data + noise_
+        datanp[tpr, :] = data 
+    
+    ## create covariate of noise 
+    cov_mat_noise = np.zeros((num_taper, num_taper))
+    for ii in range(num_taper):
+        for jj in range(num_taper):
+            cov_mat_noise[ii, jj] = var_noise**2 * ro_noise**np.abs(ii-jj) 
+            
+    mu_vec_noise = mean_noise*np.ones((num_taper,))
+    
+    noise_multi = np.transpose(np.random.multivariate_normal(mu_vec_noise, cov_mat_noise, size=num_samples_noise))
+    
+    # estimated_cov = (np.cov(noise_multi, bias= True))
+    # plt.figure()
+    # plt.imshow(estimated_cov)
+    # ro_str = "{:.2f}".format(input_synthetic['ro_noise'])
+    # plt.title('estimated cov matrix - ro = ' + ro_str)
+    # plt.colorbar()
+    # plt.colormaps()
+    # # plt.clim(0, 8) 
+    # plt.show()
+
+    
+    datanp = datanp + noise_multi
         
     if num_taper==1:
         plt.figure()
@@ -191,7 +217,8 @@ def synthetic_data(input_synthetic):
     elif num_taper==10:
         
         fig, axs = plt.subplots(5,2)
-        fig.suptitle('Multiple trials of synthetic PSD')
+        ro_str = "{:.2f}".format(ro_noise)
+        fig.suptitle('Multiple trials of synthetic PSD - ro=' +  ro_str)
         
         axs[0,0].plot(freq_range, datanp[0, :])
         axs[0,0].set_title('1')
