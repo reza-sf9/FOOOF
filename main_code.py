@@ -57,7 +57,7 @@ input_synthetic = {'a': 50,
 
 psd_data_n, freq_range = synthetic_data(input_synthetic)
 
-plt_=0
+plt_=1
 if plt_:
     estimated_cov = (np.cov(psd_data_n))
     plt.figure()
@@ -67,38 +67,39 @@ if plt_:
     plt.colorbar()
     plt.colormaps()
     # plt.clim(0, 8) 
-    plt.show()
+    # plt.show()
     
     
-    man_val = np.mean(psd_data_n, axis=0)
+    mean_val = np.mean(psd_data_n, axis=0)
+    resi_ = psd_data_n - mean_val 
     
     fig, axs = plt.subplots(5,2)
     fig.suptitle('residual  - ro=' +  ro_str)
     
-    axs[0,0].plot(freq_range, psd_data_n[0, :]-man_val)
+    axs[0,0].plot(freq_range, resi_[0, :])
     axs[0,0].set_title('1')
-    axs[0,1].plot(freq_range, psd_data_n[1, :]-man_val)
+    axs[0,1].plot(freq_range, resi_[1, :])
     axs[0,1].set_title('2')
     
-    axs[1,0].plot(freq_range, psd_data_n[2, :]-man_val)
+    axs[1,0].plot(freq_range, resi_[2, :])
     axs[1,0].set_title('3')
-    axs[1,1].plot(freq_range, psd_data_n[3, :]-man_val)
+    axs[1,1].plot(freq_range, resi_[3, :])
     axs[1,1].set_title('4')
     
-    axs[2,0].plot(freq_range, psd_data_n[4, :]-man_val)
+    axs[2,0].plot(freq_range, resi_[4, :])
     axs[2,0].set_title('5')
-    axs[2,1].plot(freq_range, psd_data_n[5, :]-man_val)
+    axs[2,1].plot(freq_range, resi_[5, :])
     axs[2,1].set_title('6')
     
-    axs[3,0].plot(freq_range, psd_data_n[6, :]-man_val)
+    axs[3,0].plot(freq_range, resi_[6, :])
     axs[3,0].set_title('7')
-    axs[3,1].plot(freq_range, psd_data_n[7, :]-man_val)
+    axs[3,1].plot(freq_range, resi_[7, :])
     axs[3,1].set_title('8')
     
-    axs[4,0].plot(freq_range, psd_data_n[8, :]-man_val)
+    axs[4,0].plot(freq_range, resi_[8, :])
     axs[4,0].set_title('9')
     axs[4,0].set_xlabel('freq (Hz)')
-    axs[4,1].plot(freq_range, psd_data_n[9, :]-man_val)
+    axs[4,1].plot(freq_range, resi_[9, :])
     axs[4,1].set_title('10')
     axs[4,1].set_xlabel('freq (Hz)')
 
