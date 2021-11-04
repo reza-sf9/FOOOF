@@ -54,7 +54,8 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
             
             
             elif method_solving == 'M':
-                sig_cov = pm.HalfNormal("s_d", sd=sd_1) # REZA: get error if put normal 
+                # sig_cov = pm.HalfNormal("s_d", sd=sd_1) # REZA: get error if put normal 
+                sig_cov = 1
                 ro_cov = pm.Uniform('ro', lower=-1, upper=1)
 
                 l_freq = f_at_obs.shape[0]

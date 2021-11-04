@@ -43,10 +43,10 @@ input_synthetic = {'a': 50,
                    'sigma_2': 1,
                    'w_2': 4,
                    
-                   'noise_coef': 0.4,
+                   'noise_coef': 0.0, # not have an effect 
                    'mean_noise': 0,
                    'var_noise': 1,
-                   'ro_noise': 0.0,
+                   'ro_noise': 0.1,
                    
                    'num_bumps': 1,
                    'num_taper': 10,
@@ -59,13 +59,15 @@ psd_data_n, freq_range = synthetic_data(input_synthetic)
 
 plt_=1
 if plt_:
-    estimated_cov = (np.cov(psd_data_n))
-    plt.figure()
-    plt.imshow(estimated_cov)
     ro_str = "{:.2f}".format(input_synthetic['ro_noise'])
-    plt.title('estimated cov matrix - ro = ' + ro_str)
-    plt.colorbar()
-    plt.colormaps()
+    
+    # estimated_cov = (np.cov(psd_data_n))
+    # plt.figure()
+    # plt.imshow(estimated_cov)
+    
+    # plt.title('estimated cov matrix - ro = ' + ro_str)
+    # plt.colorbar()
+    # plt.colormaps()
     # plt.clim(0, 8) 
     # plt.show()
     
@@ -147,7 +149,7 @@ if method_solving== 'M':
     input_model.update(added_dict)
     
 data = psd_data_n
-num_sample_post= 5000
+num_sample_post= 2000
 trace, modelsim = do_fit_psd(data, freq_range, input_model, num_sample_post)
 
 #### rsf - visualization 
@@ -257,9 +259,35 @@ if method_solving == '1':
 elif method_solving == 'M':
     # NUTS: [ro, s_d, mu1, sig1, w1, c, b, a]
     # az.plot_trace(trace, ['mu_'])
-    az.plot_trace(trace, ['sig1', 'w1'])
-    az.plot_trace(trace, ['ro', 's_d'])
-    az.plot_trace(trace, ['a', 'b', 'c'])
+    # az.plot_trace(trace, ['sig1', 'w1'])
+    # az.plot_trace(trace, ['ro', 's_d'])
+    # az.summary(trace, ['ro', 's_d'])
+    az.plot_trace(trace, ['ro'])
+    az.summary(trace, ['ro'])
+    # az.plot_trace(trace, ['a', 'b', 'c'])
     
-    K=1
+    
+k=1
+x_axis = np.arange(-0.25, 0.25, 0.001)
+
+# prior dist
+# prior_dist = norm.pdf(x_axis, input_model['mu_1'], np.sqrt(input_model['sd_1']))
+
+# posterior dist 
+posterior_ro_sample = trace['ro']
+post_mu, post_sigma = norm.fit(posterior_ro_sample)
+post_dist = norm.pdf(x_axis, post_mu, post_sigma)
+post_dist = (post_dist/np.max(post_dist))*np.max(prior_dist)
+
+
+plt.figure()
+# plt.plot(x_axis, prior_dist, color='red', label='prior data')
+plt.plot(x_axis, post_dist, color='green', label='posterior dist')
+rho_str_mean = "{:.2f}".format(post_mu)
+rho_str_var = "{:.2f}".format(post_sigma)
+# plt.axvline(x= mu_1,  'g--', label='synthetic value')
+plt.title('rho - synthetic value =' + str(input_synthetic['mu_1']) + '  mean=' + rho_str_mean+ '* sigma= '+ rho_str_mean)
+plt.legend()
+plt.show()
+
 k=1
