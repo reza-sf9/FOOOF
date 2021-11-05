@@ -21,11 +21,13 @@ np.random.seed(1000)  # set the random seed.
 
 ###  Specify the signal
 dt = 0.001
-f, psd_mt, nu = calc_ken_data_generation(dt)
-
-#### rsf - calc covariance matrix and multitaper calculation 
-signal= psd_mt
-calc_cov_pre_analysis(signal, dt)
+ken_data = 0
+if ken_data: 
+    f, psd_mt, nu = calc_ken_data_generation(dt)
+    
+    #### rsf - calc covariance matrix and multitaper calculation 
+    signal= psd_mt
+    calc_cov_pre_analysis(signal, dt)
 
 
 #### rsf - generating syntehtic data
@@ -37,7 +39,7 @@ input_synthetic = {'a': 50,
                    
                    'mu_1': 5,
                    'sigma_1': 1,
-                   'w_1': 4,
+                   'w_1': 5,
                    
                    'mu_2': 5,
                    'sigma_2': 1,
@@ -46,10 +48,10 @@ input_synthetic = {'a': 50,
                    'noise_coef': 0.0, # not have an effect 
                    'mean_noise': 0,
                    'var_noise': 1,
-                   'ro_noise': 0.1,
+                   'ro_noise': 0.2,
                    
                    'num_bumps': 1,
-                   'num_taper': 10,
+                   'num_taper': 20,
                    
                    'low_fr': 1,
                    'high_fr': 10,
@@ -72,49 +74,50 @@ if plt_:
     # plt.show()
     
     
-    mean_val = np.mean(psd_data_n, axis=0)
-    resi_ = psd_data_n - mean_val 
-    max_val = np.max(np.abs(resi_))
-    
-    fig, axs = plt.subplots(5,2)
-    fig.suptitle('residual  - rho=' +  ro_str)
-    
-    axs[0,0].plot(freq_range, resi_[0, :], 'r.')
-    axs[0,0].set_title('1')
-    axs[0,0].set_ylim(bottom= -max_val, top=max_val)
-    axs[0,1].plot(freq_range, resi_[1, :], 'r.')
-    axs[0,1].set_title('2')
-    axs[0,1].set_ylim(bottom= -max_val, top=max_val)
-    
-    axs[1,0].plot(freq_range, resi_[2, :], 'r.')
-    axs[1,0].set_title('3')
-    axs[1,0].set_ylim(bottom= -max_val, top=max_val)
-    axs[1,1].plot(freq_range, resi_[3, :], 'r.')
-    axs[1,1].set_title('4')
-    axs[1,1].set_ylim(bottom= -max_val, top=max_val)
-    
-    axs[2,0].plot(freq_range, resi_[4, :], 'r.')
-    axs[2,0].set_title('5')
-    axs[2,0].set_ylim(bottom= -max_val, top=max_val)
-    axs[2,1].plot(freq_range, resi_[5, :], 'r.')
-    axs[2,1].set_title('6')
-    axs[2,1].set_ylim(bottom= -max_val, top=max_val)
-    
-    axs[3,0].plot(freq_range, resi_[6, :], 'r.')
-    axs[3,0].set_title('7')
-    axs[3,0].set_ylim(bottom= -max_val, top=max_val)
-    axs[3,1].plot(freq_range, resi_[7, :], 'r.')
-    axs[3,1].set_title('8')
-    axs[3,1].set_ylim(bottom= -max_val, top=max_val)
-    
-    axs[4,0].plot(freq_range, resi_[8, :], 'r.')
-    axs[4,0].set_title('9')
-    axs[4,0].set_ylim(bottom= -max_val, top=max_val)
-    axs[4,0].set_xlabel('freq (Hz)')
-    axs[4,1].plot(freq_range, resi_[9, :], 'r.')
-    axs[4,1].set_title('10')
-    axs[4,1].set_ylim(bottom= -max_val, top=max_val)
-    axs[4,1].set_xlabel('freq (Hz)')
+    if input_synthetic['num_taper'] == 10:
+        mean_val = np.mean(psd_data_n, axis=0)
+        resi_ = psd_data_n - mean_val 
+        max_val = np.max(np.abs(resi_))
+        
+        fig, axs = plt.subplots(5,2)
+        fig.suptitle('residual  - rho=' +  ro_str)
+        
+        axs[0,0].plot(freq_range, resi_[0, :], 'r.')
+        axs[0,0].set_title('1')
+        axs[0,0].set_ylim(bottom= -max_val, top=max_val)
+        axs[0,1].plot(freq_range, resi_[1, :], 'r.')
+        axs[0,1].set_title('2')
+        axs[0,1].set_ylim(bottom= -max_val, top=max_val)
+        
+        axs[1,0].plot(freq_range, resi_[2, :], 'r.')
+        axs[1,0].set_title('3')
+        axs[1,0].set_ylim(bottom= -max_val, top=max_val)
+        axs[1,1].plot(freq_range, resi_[3, :], 'r.')
+        axs[1,1].set_title('4')
+        axs[1,1].set_ylim(bottom= -max_val, top=max_val)
+        
+        axs[2,0].plot(freq_range, resi_[4, :], 'r.')
+        axs[2,0].set_title('5')
+        axs[2,0].set_ylim(bottom= -max_val, top=max_val)
+        axs[2,1].plot(freq_range, resi_[5, :], 'r.')
+        axs[2,1].set_title('6')
+        axs[2,1].set_ylim(bottom= -max_val, top=max_val)
+        
+        axs[3,0].plot(freq_range, resi_[6, :], 'r.')
+        axs[3,0].set_title('7')
+        axs[3,0].set_ylim(bottom= -max_val, top=max_val)
+        axs[3,1].plot(freq_range, resi_[7, :], 'r.')
+        axs[3,1].set_title('8')
+        axs[3,1].set_ylim(bottom= -max_val, top=max_val)
+        
+        axs[4,0].plot(freq_range, resi_[8, :], 'r.')
+        axs[4,0].set_title('9')
+        axs[4,0].set_ylim(bottom= -max_val, top=max_val)
+        axs[4,0].set_xlabel('freq (Hz)')
+        axs[4,1].plot(freq_range, resi_[9, :], 'r.')
+        axs[4,1].set_title('10')
+        axs[4,1].set_ylim(bottom= -max_val, top=max_val)
+        axs[4,1].set_xlabel('freq (Hz)')
 
 
 
@@ -268,7 +271,7 @@ elif method_solving == 'M':
     
     
 k=1
-x_axis = np.arange(-0.25, 0.25, 0.001)
+x_axis = np.arange(0.-.25, 0.25, 0.001)
 
 # prior dist
 # prior_dist = norm.pdf(x_axis, input_model['mu_1'], np.sqrt(input_model['sd_1']))

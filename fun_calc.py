@@ -32,7 +32,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
 
         a = pm.Uniform('a', lower=5, upper=10)
         b = pm.Normal('b', 0.13, 40)
-        c = pm.Normal('c', mu=0., sd=4)
+        b = pm.Normal('b', mu=0., sd=4)
 
 
         num_bumps=input_model['num_bumps']
@@ -50,7 +50,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
             if method_solving == '1':
                 ##  Gaussian noise assumed on top of a/(f+b) shape
                 # prior of paramteried model > is the mean of likelihood function
-                gauss = pm.Deterministic('gauss', w1 * np.exp(-0.5 * (f_at_obs - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs + b) + c)
+                gauss = pm.Deterministic('gauss', w1 * np.exp(-0.5 * (f_at_obs - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs + b) + b)
             
             
             elif method_solving == 'M':
@@ -59,8 +59,8 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
                 ro_cov = pm.Uniform('ro', lower=-1, upper=1)
 
                 l_freq = f_at_obs.shape[0]
-                mu_ = calc_mu_vec(w1, mu1, sig1, a, b, c, f_at_obs)
-                cov_ = calc_cov_mat(sig_cov, ro_cov, l_freq, cov_mode)
+                mu_ = calbmu_vec(w1, mu1, sig1, a, b, b, f_at_obs)
+                cov_ = calbcov_mat(sig_cov, ro_cov, l_freq, cov_mode)
 
                 mu_ = pm.Deterministic('mu_', mu_)
                 cov_ = pm.Deterministic('cov_', cov_)
@@ -79,7 +79,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
             mu2 = pm.Normal('mu2', mu=mu_2, sd=sd_2)
         
             gauss = pm.Deterministic('gauss', w1 * np.exp(-0.5 * (f_at_obs - mu1) ** 2 / (sig1 ** 2)) + w2 * np.exp(
-                -0.5 * (f_at_obs - mu2) ** 2 / (sig2 ** 2)) + a / (f_at_obs + b) + c)
+                -0.5 * (f_at_obs - mu2) ** 2 / (sig2 ** 2)) + a / (f_at_obs + b) + b)
             
         elif num_bumps == 3:
             w2 = pm.HalfNormal('w2', sd=1)
@@ -93,7 +93,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
             ##  Gaussian noise assumed on top of a/(f+b) shape
             # prior of paramteried model > is the mean of likelihood function
             gauss = pm.Deterministic('gauss', w1 * np.exp(-0.5 * (f_at_obs - mu1) ** 2 / (sig1 ** 2)) + w2 * np.exp(
-                -0.5 * (f_at_obs - mu2) ** 2 / (sig2 ** 2)) + w3 * np.exp(-0.5 * (f_at_obs - mu3) ** 2 / (sig3 ** 2)) + a / (f_at_obs + b) + c)
+                -0.5 * (f_at_obs - mu2) ** 2 / (sig2 ** 2)) + w3 * np.exp(-0.5 * (f_at_obs - mu3) ** 2 / (sig3 ** 2)) + a / (f_at_obs + b) + b)
 
 
         # run full likelihood p(observation|prior)
@@ -116,7 +116,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
 
         # pm.traceplot(trace, ['gauss', 'error'])
         # plt.figure()
-        # # pm.traceplot(trace, ['mu1', 'sig1', 'w1', 'ro', 's_d', 'c', 'b', 'a'])
+        # # pm.traceplot(trace, ['mu1', 'sig1', 'w1', 'ro', 's_d', 'b', 'b', 'a'])
         # pm.traceplot(trace)
         # plt.show()
         k = 1
@@ -124,7 +124,7 @@ def do_fit_psd(log_psd, f_at_obs, input_model, num_sample_post):
     return trace, model3
 
 
-def synthetic_data(input_synthetic):
+def synthetibdata(input_synthetic):
     
     
     
@@ -135,12 +135,12 @@ def synthetic_data(input_synthetic):
     
     # 1st bump 
     mu_1 = input_synthetic['mu_1']
-    sigma_1 = input_synthetic['sigma_1']
+    sigma1 = input_synthetic['sigma1']
     w_1 = input_synthetic['w_1']
     
     # 2nd bump 
     mu_2 = input_synthetic['mu_2']
-    sigma_2 = input_synthetic['sigma_2']
+    sigma2 = input_synthetic['sigma2']
     w_2 = input_synthetic['w_2']
     
     # noise config 
@@ -167,17 +167,17 @@ def synthetic_data(input_synthetic):
     
     for tpr in range(num_taper):
         
-        async_ = a/(freq_range+b) + c
+        asynb = a/(freq_range+b) + c
         
         
         if num_bumps==1:
-            sync_ = w_1*np.exp(-(freq_range-mu_1)**2/(2*sigma_1**2))
+            synb = w_1*np.exp(-(freq_range-mu_1)**2/(2*sigma1**2))
         elif num_bumps==2:
-            sync_ = w_1 * np.exp(-(freq_range - mu_1) ** 2 / (2 * sigma_1 ** 2)) + \
-                    w_2 * np.exp(-(freq_range - mu_2) ** 2 / (2 * sigma_2 ** 2))
+            synb = w_1 * np.exp(-(freq_range - mu_1) ** 2 / (2 * sigma1 ** 2)) + \
+                    w_2 * np.exp(-(freq_range - mu_2) ** 2 / (2 * sigma2 ** 2))
     
     
-        data = async_ + sync_
+        data = asynb + synb
 
                 
         # generating white noise
@@ -191,9 +191,9 @@ def synthetic_data(input_synthetic):
         for jj in range(num_taper):
             cov_mat_noise[ii, jj] = var_noise**2 * ro_noise**np.abs(ii-jj) 
             
-    mu_vec_noise = mean_noise*np.ones((num_taper,))
+    mu_vebnoise = mean_noise*np.ones((num_taper,))
     
-    noise_multi = np.transpose(np.random.multivariate_normal(mu_vec_noise, cov_mat_noise, size=num_samples_noise))
+    noise_multi = np.transpose(np.random.multivariate_normal(mu_vebnoise, cov_mat_noise, size=num_samples_noise))
     
     # estimated_cov = (np.cov(noise_multi, bias= True))
     # plt.figure()
@@ -258,7 +258,7 @@ def synthetic_data(input_synthetic):
     return datanp, freq_range
 
 
-def calc_mu_vec(w1, mu1, sig1, a, b, c, f_at_obs):
+def calbmu_vec(w1, mu1, sig1, a, b, c, f_at_obs):
     import theano.tensor as tt
 
     if f_at_obs.shape[0] == 9:
@@ -273,9 +273,9 @@ def calc_mu_vec(w1, mu1, sig1, a, b, c, f_at_obs):
         gauss_8 = pm.Deterministic('gauss_8', w1 * np.exp(-0.5 * (f_at_obs[8] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[8] + b) + c)
 
 
-        mu_  = tt.stack([gauss_0, gauss_1, gauss_2, gauss_3, gauss_4, gauss_5, gauss_6, gauss_7, gauss_8]).reshape((9, ))
+        mu_  = tt.stack([gauss_0, gauss_1, gauss_2, gauss_3, gauss_4, gauss_5, gauss_6, gauss_7, gauss_8]).reshape((f_at_obs.shape[0], ))
     
-    if f_at_obs.shape[0] == 18:
+    elif f_at_obs.shape[0] == 18:
         gauss_0 = pm.Deterministic('gauss_0', w1 * np.exp(-0.5 * (f_at_obs[0] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[0] + b) + c)
         gauss_1 = pm.Deterministic('gauss_1', w1 * np.exp(-0.5 * (f_at_obs[1] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[1] + b) + c)
         gauss_2 = pm.Deterministic('gauss_2', w1 * np.exp(-0.5 * (f_at_obs[2] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[2] + b) + c)
@@ -299,10 +299,60 @@ def calc_mu_vec(w1, mu1, sig1, a, b, c, f_at_obs):
         mu_  = tt.stack([gauss_0, gauss_1, gauss_2, gauss_3, gauss_4, gauss_5, gauss_6, gauss_7, gauss_8, gauss_9,
                          gauss_10, gauss_11, gauss_12, gauss_13, gauss_14, gauss_15, gauss_16, gauss_17]).reshape((18, ))
     
+    elif f_at_obs.shape[0] == 38:
+        gauss_0 = pm.Deterministic('gauss_0', w1 * np.exp(-0.5 * (f_at_obs[0] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[0] + b) + c)
+        gauss_1 = pm.Deterministic('gauss_1', w1 * np.exp(-0.5 * (f_at_obs[1] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[1] + b) + c)
+        gauss_2 = pm.Deterministic('gauss_2', w1 * np.exp(-0.5 * (f_at_obs[2] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[2] + b) + c)
+        gauss_3 = pm.Deterministic('gauss_3', w1 * np.exp(-0.5 * (f_at_obs[3] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[3] + b) + c)
+        gauss_4 = pm.Deterministic('gauss_4', w1 * np.exp(-0.5 * (f_at_obs[4] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[4] + b) + c)
+        gauss_5 = pm.Deterministic('gauss_5', w1 * np.exp(-0.5 * (f_at_obs[5] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[5] + b) + c)
+        gauss_6 = pm.Deterministic('gauss_6', w1 * np.exp(-0.5 * (f_at_obs[6] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[6] + b) + c)
+        gauss_7 = pm.Deterministic('gauss_7', w1 * np.exp(-0.5 * (f_at_obs[7] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[7] + b) + c)
+        gauss_8 = pm.Deterministic('gauss_8', w1 * np.exp(-0.5 * (f_at_obs[8] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[8] + b) + c)
+        gauss_9 = pm.Deterministic('gauss_9', w1 * np.exp(-0.5 * (f_at_obs[9] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[9] + b) + c)
+        
+        gauss_10 = pm.Deterministic('gauss_10', w1 * np.exp(-0.5 * (f_at_obs[10] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[10] + b) + c)
+        gauss_11 = pm.Deterministic('gauss_11', w1 * np.exp(-0.5 * (f_at_obs[11] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[11] + b) + c)
+        gauss_12 = pm.Deterministic('gauss_12', w1 * np.exp(-0.5 * (f_at_obs[12] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[12] + b) + c)
+        gauss_13 = pm.Deterministic('gauss_13', w1 * np.exp(-0.5 * (f_at_obs[13] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[13] + b) + c)
+        gauss_14 = pm.Deterministic('gauss_14', w1 * np.exp(-0.5 * (f_at_obs[14] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[14] + b) + c)
+        gauss_15 = pm.Deterministic('gauss_15', w1 * np.exp(-0.5 * (f_at_obs[15] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[15] + b) + c)
+        gauss_16 = pm.Deterministic('gauss_16', w1 * np.exp(-0.5 * (f_at_obs[16] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[16] + b) + c)
+        gauss_17 = pm.Deterministic('gauss_17', w1 * np.exp(-0.5 * (f_at_obs[17] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[17] + b) + c)
+        gauss_18 = pm.Deterministic('gauss_18', w1 * np.exp(-0.5 * (f_at_obs[18] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[18] + b) + c)
+        gauss_19 = pm.Deterministic('gauss_19', w1 * np.exp(-0.5 * (f_at_obs[19] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[19] + b) + c)
+        
+        gauss_20 = pm.Deterministic('gauss_20', w1 * np.exp(-0.5 * (f_at_obs[20] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[20] + b) + c)
+        gauss_21 = pm.Deterministic('gauss_21', w1 * np.exp(-0.5 * (f_at_obs[21] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[21] + b) + c)
+        gauss_22 = pm.Deterministic('gauss_22', w1 * np.exp(-0.5 * (f_at_obs[22] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[22] + b) + c)
+        gauss_23 = pm.Deterministic('gauss_23', w1 * np.exp(-0.5 * (f_at_obs[23] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[23] + b) + c)
+        gauss_24 = pm.Deterministic('gauss_24', w1 * np.exp(-0.5 * (f_at_obs[24] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[24] + b) + c)
+        gauss_25 = pm.Deterministic('gauss_25', w1 * np.exp(-0.5 * (f_at_obs[25] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[25] + b) + c)
+        gauss_26 = pm.Deterministic('gauss_26', w1 * np.exp(-0.5 * (f_at_obs[26] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[26] + b) + c)
+        gauss_27 = pm.Deterministic('gauss_27', w1 * np.exp(-0.5 * (f_at_obs[27] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[27] + b) + c)
+        gauss_28 = pm.Deterministic('gauss_28', w1 * np.exp(-0.5 * (f_at_obs[28] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[28] + b) + c)
+        gauss_29 = pm.Deterministic('gauss_29', w1 * np.exp(-0.5 * (f_at_obs[29] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[29] + b) + c)
+        
+        gauss_30 = pm.Deterministic('gauss_30', w1 * np.exp(-0.5 * (f_at_obs[30] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[30] + b) + c)
+        gauss_31 = pm.Deterministic('gauss_31', w1 * np.exp(-0.5 * (f_at_obs[31] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[31] + b) + c)
+        gauss_32 = pm.Deterministic('gauss_32', w1 * np.exp(-0.5 * (f_at_obs[32] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[32] + b) + c)
+        gauss_33 = pm.Deterministic('gauss_33', w1 * np.exp(-0.5 * (f_at_obs[33] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[33] + b) + c)
+        gauss_34 = pm.Deterministic('gauss_34', w1 * np.exp(-0.5 * (f_at_obs[34] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[34] + b) + c)
+        gauss_35 = pm.Deterministic('gauss_35', w1 * np.exp(-0.5 * (f_at_obs[35] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[35] + b) + c)
+        gauss_36 = pm.Deterministic('gauss_36', w1 * np.exp(-0.5 * (f_at_obs[36] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[36] + b) + c)
+        gauss_37 = pm.Deterministic('gauss_37', w1 * np.exp(-0.5 * (f_at_obs[37] - mu1) ** 2 / (sig1 ** 2)) + a / (f_at_obs[37] + b) + c)
+        
+
+
+        mu_  = tt.stack([gauss_0, gauss_1, gauss_2, gauss_3, gauss_4, gauss_5, gauss_6, gauss_7, gauss_8, gauss_9,
+                         gauss_10, gauss_11, gauss_12, gauss_13, gauss_14, gauss_15, gauss_16, gauss_17, gauss_18, gauss_19, 
+                         gauss_20, gauss_21, gauss_22, gauss_23, gauss_24, gauss_25, gauss_26, gauss_27, gauss_28, gauss_29,
+                         gauss_30, gauss_31, gauss_32, gauss_33, gauss_34, gauss_35, gauss_36, gauss_37]).reshape((f_at_obs.shape[0], ))
+    
         return mu_
 
 
-def calc_cov_mat(sigma, ro, l_freq, mode_cov):
+def calbcov_mat(sigma, ro, l_freq, mode_cov):
     import theano.tensor as tt
     import pymc3.math as math
 
@@ -566,280 +616,315 @@ def calc_cov_mat(sigma, ro, l_freq, mode_cov):
         cov_ = tt.stack([v_1, v_2, v_3, v_4, v_5, v_6, v_7, v_8, v_9, v_10, 
                          v_11, v_12, v_13, v_14, v_15, v_16, v_17, v_18]).reshape((l_freq, l_freq))
         
-
-        return cov_
-
-
-    import theano.tensor as tt
-    import pymc3.math as math
-
-    if l_freq==9:
-        v_1 = tt.stack([math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                       math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8)]).reshape((9, ))
-        v_2 = tt.stack([math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 0), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 3),
-                        math.dot(s_d, ro ** 4), math.dot(s_d, ro ** 5), math.dot(s_d, ro ** 6), math.dot(s_d, ro ** 7)]).reshape((9,))
-        v_3 = tt.stack([math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 0), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 2),
-                        math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 4), math.dot(s_d, ro ** 5), math.dot(s_d, ro ** 6)]).reshape((9,))
-        v_4 = tt.stack([math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 0), math.dot(s_d, ro ** 1),
-                        math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 4), math.dot(s_d, ro ** 5)]).reshape((9,))
-        v_5 = tt.stack([math.dot(s_d, ro ** 4), math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 1), math.dot(s_d,ro ** 0),
-                        math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 4)]).reshape((9,))
-        v_6 = tt.stack([math.dot(s_d, ro ** 5), math.dot(s_d, ro ** 4), math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 2), math.dot(s_d,ro ** 1),
-                        math.dot(s_d,ro ** 0), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 3)]).reshape((9,))
-        v_7 = tt.stack([math.dot(s_d, ro ** 6), math.dot(s_d, ro ** 5), math.dot(s_d, ro ** 4), math.dot(s_d, ro ** 3), math.dot(s_d,ro ** 2),
-                        math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 0), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 2)]).reshape((9,))
-        v_8 = tt.stack([math.dot(s_d, ro ** 7), math.dot(s_d, ro ** 6), math.dot(s_d, ro ** 5), math.dot(s_d, ro ** 4), math.dot(s_d,ro ** 3),
-                        math.dot(s_d, ro ** 2),math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 0), math.dot(s_d, ro ** 1)]).reshape((9,))
-        v_9 = tt.stack([math.dot(s_d, ro ** 8), math.dot(s_d, ro ** 7), math.dot(s_d, ro ** 6), math.dot(s_d, ro ** 5), math.dot(s_d, ro ** 4),
-                        math.dot(s_d, ro ** 3), math.dot(s_d, ro ** 2), math.dot(s_d, ro ** 1), math.dot(s_d, ro ** 0)]).reshape((9,))
-
-        cov_ = tt.stack([v_1, v_2, v_3, v_4, v_5, v_6, v_7, v_8, v_9]).reshape((9, 9))
-    
-    elif l_freq==18:
-        
-        
+    elif l_freq == 38:
+            
         if mode_cov ==-1: 
-            v_1 = tt.stack([math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10), math.dot(s_d, ro**11), math.dot(s_d, ro**12), math.dot(s_d, ro**13), math.dot(s_d, ro**14),
-                            math.dot(s_d, ro**15), math.dot(s_d, ro**16), math.dot(s_d, ro**17)]).reshape((l_freq, ))
-            
-            v_2 = tt.stack([math.dot(s_d, ro**1), math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3),
-                            math.dot(s_d, ro**4), math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8), 
-                            math.dot(s_d, ro**9), math.dot(s_d, ro**10), math.dot(s_d, ro**11), math.dot(s_d, ro**12), math.dot(s_d, ro**13), math.dot(s_d, ro**14),
-                            math.dot(s_d, ro**15), math.dot(s_d, ro**16)]).reshape((l_freq, ))
-            
-            v_3 = tt.stack([math.dot(s_d, ro**2), math.dot(s_d, ro**1), math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), 
-                            math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10), math.dot(s_d, ro**11), math.dot(s_d, ro**12), math.dot(s_d, ro**13), math.dot(s_d, ro**14),
-                            math.dot(s_d, ro**15)]).reshape((l_freq, ))
-            
-            v_4 = tt.stack([math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), math.dot(s_d, ro**0), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10), math.dot(s_d, ro**11), math.dot(s_d, ro**12), math.dot(s_d, ro**13), math.dot(s_d, ro**14)]).reshape((l_freq, ))
-            
-            v_5 = tt.stack([math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), math.dot(s_d, ro**0), 
-                            math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10), math.dot(s_d, ro**11), math.dot(s_d, ro**12), math.dot(s_d, ro**13)]).reshape((l_freq, ))
-            
-            v_6 = tt.stack([math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0),math.dot(s_d, ro**1),  math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10), math.dot(s_d, ro**11), math.dot(s_d, ro**12)]).reshape((l_freq, ))
-            
-            v_7 = tt.stack([math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), 
-                            math.dot(s_d, ro**1), math.dot(s_d, ro**0), 
-                            math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10), math.dot(s_d, ro**11)]).reshape((l_freq, ))
-            
-            v_8 = tt.stack([ math.dot(s_d, ro**7),  math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), 
-                            math.dot(s_d, ro**2), math.dot(s_d, ro**1), math.dot(s_d, ro**0), 
-                            math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9),
-                            math.dot(s_d, ro**10)]).reshape((l_freq, ))
-            
-            v_9 = tt.stack([math.dot(s_d, ro**8), math.dot(s_d, ro**7),  math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), 
-                            math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8),  math.dot(s_d, ro**9)]).reshape((l_freq, ))
-            
-            v_10 = tt.stack([math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7),  math.dot(s_d, ro**6), math.dot(s_d, ro**5), 
-                              math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7), math.dot(s_d, ro**8)]).reshape((l_freq, ))
-            
-            v_11 = tt.stack([math.dot(s_d, ro**10), math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7),  math.dot(s_d, ro**6), 
-                              math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6), math.dot(s_d, ro**7)]).reshape((l_freq, ))
-            
-            v_12 = tt.stack([math.dot(s_d, ro**11), math.dot(s_d, ro**10), math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7), 
-                              math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5), math.dot(s_d, ro**6)]).reshape((l_freq, ))
-            
-            v_13 = tt.stack([math.dot(s_d, ro**12), math.dot(s_d, ro**11), math.dot(s_d, ro**10), math.dot(s_d, ro**9), math.dot(s_d, ro**8), 
-                              math.dot(s_d, ro**7),  math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4),
-                            math.dot(s_d, ro**5)]).reshape((l_freq, ))
-            
-            v_14 = tt.stack([math.dot(s_d, ro**13), math.dot(s_d, ro**12), math.dot(s_d, ro**11), math.dot(s_d, ro**10), math.dot(s_d, ro**9), 
-                              math.dot(s_d, ro**8), math.dot(s_d, ro**7),  math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), 
-                              math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3), math.dot(s_d, ro**4)]).reshape((l_freq, ))
-            
-            v_15 = tt.stack([math.dot(s_d, ro**14), math.dot(s_d, ro**13), math.dot(s_d, ro**12), math.dot(s_d, ro**11), math.dot(s_d, ro**10), 
-                              math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7),  math.dot(s_d, ro**6), math.dot(s_d, ro**5), 
-                              math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2), math.dot(s_d, ro**3)]).reshape((l_freq, ))
-            
-            v_16 = tt.stack([math.dot(s_d, ro**15), math.dot(s_d, ro**14), math.dot(s_d, ro**13), math.dot(s_d, ro**12), math.dot(s_d, ro**11), 
-                              math.dot(s_d, ro**10), math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7),  math.dot(s_d, ro**6), 
-                              math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1), math.dot(s_d, ro**2)]).reshape((l_freq, ))
-            
-            v_17 = tt.stack([math.dot(s_d, ro**16), math.dot(s_d, ro**15), math.dot(s_d, ro**14), math.dot(s_d, ro**13), math.dot(s_d, ro**12), 
-                              math.dot(s_d, ro**11), math.dot(s_d, ro**10), math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7),  
-                              math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro**1)]).reshape((l_freq, ))
-            
-            v_18 = tt.stack([math.dot(s_d, ro**17), math.dot(s_d, ro**16), math.dot(s_d, ro**15), math.dot(s_d, ro**14), math.dot(s_d, ro**13), 
-                              math.dot(s_d, ro**12), math.dot(s_d, ro**11), math.dot(s_d, ro**10), math.dot(s_d, ro**9), math.dot(s_d, ro**8), math.dot(s_d, ro**7), 
-                              math.dot(s_d, ro**6), math.dot(s_d, ro**5), math.dot(s_d, ro**4), math.dot(s_d, ro**3), math.dot(s_d, ro**2), math.dot(s_d, ro**1), 
-                            math.dot(s_d, ro**0)]).reshape((l_freq, ))
-        
-        elif mode_cov == 0:
-        
-            v_1 = tt.stack([math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_2 = tt.stack([0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_3 = tt.stack([0, 0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_4 = tt.stack([0, 0, 0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_5 = tt.stack([0, 0, 0, 0, math.dot(s_d, ro**0),  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_6 = tt.stack([0, 0, 0, 0, 0, 
-                            math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_7 = tt.stack([ 0, 0, 0, 0, 0, 0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]).reshape((l_freq, ))
-            
-            v_8 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro**0),  0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_9 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_10 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_11 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_12 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                            math.dot(s_d, ro**0), 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_13 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            math.dot(s_d, ro**0), 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_14 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            math.dot(s_d, ro**0), 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_15 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                            math.dot(s_d, ro**0), 0, 0, 0]).reshape((l_freq, ))
-            
-            v_16 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                            math.dot(s_d, ro**0), 0, 0]).reshape((l_freq, ))
-            
-            v_17 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                            math.dot(s_d, ro**0), 0]).reshape((l_freq, ))
-            
-            v_18 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                            math.dot(s_d, ro**0)]).reshape((l_freq, ))
-        
-        elif mode_cov == 1:
-            
-            v_1 = tt.stack([math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_2 = tt.stack([math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_3 = tt.stack([0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_4 = tt.stack([0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_5 = tt.stack([0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0),  math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_6 = tt.stack([0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_7 = tt.stack([ 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]).reshape((l_freq, ))
-            
-            v_8 = tt.stack([ 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0),  math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_9 = tt.stack([0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_10 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_11 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_12 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_13 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1),
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_14 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1),
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0]).reshape((l_freq, ))
-            
-            v_15 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0]).reshape((l_freq, ))
-            
-            v_16 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0]).reshape((l_freq, ))
-            
-            v_17 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1)]).reshape((l_freq, ))
-            
-            v_18 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0)]).reshape((l_freq, ))
-            
-        elif mode_cov == 2:
-        
-            v_1 = tt.stack([math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_2 = tt.stack([math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_3 = tt.stack([0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_4 = tt.stack([0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_5 = tt.stack([0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0),  math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_6 = tt.stack([0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_7 = tt.stack([ 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,]).reshape((l_freq, ))
-            
-            v_8 = tt.stack([ 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0),  math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_9 = tt.stack([0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_10 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_11 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_12 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_13 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1),
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0, 0]).reshape((l_freq, ))
-            
-            v_14 = tt.stack([ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1),
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0, 0]).reshape((l_freq, ))
-            
-            v_15 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0, 0]).reshape((l_freq, ))
-            
-            v_16 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1), 0]).reshape((l_freq, ))
-            
-            v_17 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0), math.dot(s_d, ro ** 1)]).reshape((l_freq, ))
-            
-            v_18 = tt.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, math.dot(s_d, ro ** 1), 
-                            math.dot(s_d, ro**0)]).reshape((l_freq, ))
-        
-        cov_ = tt.stack([v_1, v_2, v_3, v_4, v_5, v_6, v_7, v_8, v_9, v_10, 
-                         v_11, v_12, v_13, v_14, v_15, v_16, v_17, v_18]).reshape((l_freq, l_freq))
-        
+            v_1 = tt.stack([math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14),
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**34),
+                            math.dot(sigma**2, ro**35), math.dot(sigma**2, ro**36), math.dot(sigma**2, ro**37)]).reshape((l_freq, ))
+            
+            v_2 = tt.stack([math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3),
+                            math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), 
+                            math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14),
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**34),
+                            math.dot(sigma**2, ro**35), math.dot(sigma**2, ro**36)]).reshape((l_freq, ))
+            
+            v_3 = tt.stack([math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), 
+                            math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14),
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**34),
+                            math.dot(sigma**2, ro**35),]).reshape((l_freq, ))
+            
+            v_4 = tt.stack([math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**34)]).reshape((l_freq, ))
+            
+            v_5 = tt.stack([math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**0), 
+                            math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**33)]).reshape((l_freq, ))
+            
+            v_6 = tt.stack([math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0),math.dot(sigma**2, ro**1),  math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**32)]).reshape((l_freq, ))
+            
+            v_7 = tt.stack([math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), 
+                            math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**0), 
+                            math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**31)]).reshape((l_freq, ))
+            
+            v_8 = tt.stack([ math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), 
+                            math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**0), 
+                            math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29),
+                            math.dot(sigma**2, ro**30)]).reshape((l_freq, ))
+            
+            v_9 = tt.stack([math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), 
+                            math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8),  math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28),  math.dot(sigma**2, ro**29)]).reshape((l_freq, ))
+            
+            v_10 = tt.stack([math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), 
+                              math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**28)]).reshape((l_freq, ))
+            
+            v_11 = tt.stack([math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), 
+                              math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**27)]).reshape((l_freq, ))
+            
+            v_12 = tt.stack([math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**26)]).reshape((l_freq, ))
+            
+            v_13 = tt.stack([math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), 
+                              math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24),
+                            math.dot(sigma**2, ro**25)]).reshape((l_freq, ))
+            
+            v_14 = tt.stack([math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), 
+                              math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), 
+                              math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**24)]).reshape((l_freq, ))
+            
+            v_15 = tt.stack([math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), 
+                              math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), 
+                              math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**23)]).reshape((l_freq, ))
+            
+            v_16 = tt.stack([math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), 
+                              math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  math.dot(sigma**2, ro**6), 
+                              math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**22)]).reshape((l_freq, ))
+            
+            v_17 = tt.stack([math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**12), 
+                              math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7),  
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**21)]).reshape((l_freq, ))
+            
+            v_18 = tt.stack([math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19),
+                            math.dot(sigma**2, ro**20)]).reshape((l_freq, ))
+            
+            v_19 = tt.stack([math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**19)]).reshape((l_freq, ))
+            
+            v_20 = tt.stack([math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**18)]).reshape((l_freq, ))
+            
+            v_21 = tt.stack([math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**17)]).reshape((l_freq, ))
+            
+            v_22 = tt.stack([math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**16)]).reshape((l_freq, ))
+            
+            v_23 = tt.stack([math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14), 
+                            math.dot(sigma**2, ro**15)]).reshape((l_freq, ))
+            
+            v_24 = tt.stack([math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13), math.dot(sigma**2, ro**14)]).reshape((l_freq, ))
+            
+            v_25 = tt.stack([math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**13)]).reshape((l_freq, ))
+            
+            v_26 = tt.stack([math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**12)]).reshape((l_freq, ))
+            
+            v_27 = tt.stack([math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**11)]).reshape((l_freq, ))
+            
+            v_28 = tt.stack([math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9),
+                            math.dot(sigma**2, ro**10) ]).reshape((l_freq, ))
+            
+            v_29 = tt.stack([math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**9)]).reshape((l_freq, ))
+            
+            v_30 = tt.stack([math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7), math.dot(sigma**2, ro**8)]).reshape((l_freq, ))
+            
+            v_31 = tt.stack([math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**7)]).reshape((l_freq, ))
+            
+            v_32 = tt.stack([math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**6)]).reshape((l_freq, ))
+            
+            v_33 = tt.stack([math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4),
+                            math.dot(sigma**2, ro**5)]).reshape((l_freq, ))
+            
+            v_34 = tt.stack([math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**4)]).reshape((l_freq, ))
+            
+            v_35 = tt.stack([math.dot(sigma**2, ro**34), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**3)]).reshape((l_freq, ))
+            
+            v_36 = tt.stack([math.dot(sigma**2, ro**35), math.dot(sigma**2, ro**34), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1), math.dot(sigma**2, ro**2)]).reshape((l_freq, ))
+            
+            v_37 = tt.stack([math.dot(sigma**2, ro**36), math.dot(sigma**2, ro**35), math.dot(sigma**2, ro**34), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0), math.dot(sigma**2, ro**1)]).reshape((l_freq, ))
+            
+            v_38 = tt.stack([math.dot(sigma**2, ro**37), math.dot(sigma**2, ro**36), math.dot(sigma**2, ro**35), math.dot(sigma**2, ro**34), math.dot(sigma**2, ro**33), math.dot(sigma**2, ro**32), math.dot(sigma**2, ro**31), math.dot(sigma**2, ro**30), math.dot(sigma**2, ro**29), math.dot(sigma**2, ro**28), math.dot(sigma**2, ro**27), math.dot(sigma**2, ro**26), math.dot(sigma**2, ro**25), math.dot(sigma**2, ro**24), math.dot(sigma**2, ro**23), math.dot(sigma**2, ro**22), math.dot(sigma**2, ro**21), math.dot(sigma**2, ro**20), math.dot(sigma**2, ro**19), math.dot(sigma**2, ro**18), math.dot(sigma**2, ro**17), math.dot(sigma**2, ro**16), math.dot(sigma**2, ro**15), math.dot(sigma**2, ro**14), math.dot(sigma**2, ro**13), 
+                              math.dot(sigma**2, ro**12), math.dot(sigma**2, ro**11), math.dot(sigma**2, ro**10), math.dot(sigma**2, ro**9), math.dot(sigma**2, ro**8), math.dot(sigma**2, ro**7), 
+                              math.dot(sigma**2, ro**6), math.dot(sigma**2, ro**5), math.dot(sigma**2, ro**4), math.dot(sigma**2, ro**3), math.dot(sigma**2, ro**2), math.dot(sigma**2, ro**1), 
+                            math.dot(sigma**2, ro**0)]).reshape((l_freq, ))
+            
+            cov_ = tt.stack([v_1, v_2, v_3, v_4, v_5, v_6, v_7, v_8, v_9, v_10, 
+                             v_11, v_12, v_13, v_14, v_15, v_16, v_17, v_18, v_19, v_20,
+                             v_21, v_22, v_23, v_24, v_25, v_26, v_27, v_28, v_29, v_30,
+                             v_31, v_32, v_33, v_34, v_35, v_36, v_37, v_38]).reshape((l_freq, l_freq))
 
-        return cov_
+    return cov_
 
 
-def calc_cov_pre_analysis(signal, dt):
+def calbcov_pre_analysis(signal, dt):
     
-    # data = data_cosine(N=2048, A=0.1, sampling=1024, freq=200)
+    # data = datacosine(N=2048, A=0.1, sampling=1024, freq=200)
 
     NW=9
     N_ = signal.shape[0]
@@ -890,7 +975,7 @@ def calc_cov_pre_analysis(signal, dt):
     k=1
 
 ### 3 - Example of simulated EEG using AR($p$), generated by specifying $R$ AR(1) and $C$ AR(2) components
-def calc_ken_data_generation(dt): 
+def calbken_datageneration(dt): 
     import buildsignal as bs
     import nitime.algorithms as tsa
     
