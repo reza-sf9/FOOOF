@@ -47,7 +47,7 @@ input_synthetic = {'a': 50,
                    
                    'noise_coef': 0.0, # not have an effect 
                    'mean_noise': 0,
-                   'var_noise': 1,
+                   'var_noise': 0.2,
                    'ro_noise': 0.2,
                    
                    'num_bumps': 1,
